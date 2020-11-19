@@ -6,20 +6,25 @@ defmodule UserPoints.Application do
   use Application
 
   def start(_type, _args) do
-    children = [
-      # Start the Ecto repository
-      UserPoints.Repo,
-      # Start the Telemetry supervisor
-      UserPointsWeb.Telemetry,
-      # Start the PubSub system
-      {Phoenix.PubSub, name: UserPoints.PubSub},
-      # Start the user cache
-      UserPoints.UserCache,
-      # Start the Endpoint (http/https)
-      UserPointsWeb.Endpoint
-      # Start a worker by calling: UserPoints.Worker.start_link(arg)
-      # {UserPoints.Worker, arg}
-    ]
+    # We don't want the cache running in `:test` - we'll start that manually when we need it so we
+    # can give it permission to use the Repo
+    children =
+      if Mix.env() == :test do
+        [
+          UserPoints.Repo,
+          UserPointsWeb.Telemetry,
+          {Phoenix.PubSub, name: UserPoints.PubSub},
+          UserPointsWeb.Endpoint
+        ]
+      else
+        [
+          UserPoints.Repo,
+          UserPointsWeb.Telemetry,
+          {Phoenix.PubSub, name: UserPoints.PubSub},
+          UserPoints.UserCache,
+          UserPointsWeb.Endpoint
+        ]
+      end
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options

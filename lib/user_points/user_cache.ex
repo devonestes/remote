@@ -1,7 +1,9 @@
 defmodule UserPoints.UserCache do
   use GenServer
 
-  @timeout if Mix.env() == :test, do: 1, else: 60_000
+  alias UserPoints.Users
+
+  @timeout if Mix.env() == :test, do: 5, else: 60_000
 
   ## API
 
@@ -20,24 +22,21 @@ defmodule UserPoints.UserCache do
   @impl true
   def handle_info(:refresh, {max_number, timestamp}) do
     schedule_refresh()
-    spawn(fn -> update_db() end)
+    update_db()
     {:noreply, {gen_max_number(max_number), timestamp}}
   end
 
   @impl true
-  def handle_call(:get_users, _, {max_number, _}) do
-    users = do_get_users(max_number)
-    {:reply, users, {max_number, current_timestamp()}}
+  def handle_call(:get_users, _, {max_number, timestamp}) do
+    users = Users.get_users(max_number)
+    {:reply, {users, timestamp}, {max_number, current_timestamp()}}
   end
 
   defp update_db() do
-    # TODO
-    nil
-  end
-
-  defp do_get_users(_max_number) do
-    # TODO
-    []
+    for user <- Users.list_users() do
+      points = gen_max_number(user.points)
+      Users.update_user(user, points)
+    end
   end
 
   defp schedule_refresh(), do: Process.send_after(self(), :refresh, @timeout)
