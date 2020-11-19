@@ -21,7 +21,7 @@ defmodule UserPoints.Application do
           UserPoints.Repo,
           UserPointsWeb.Telemetry,
           {Phoenix.PubSub, name: UserPoints.PubSub},
-          UserPoints.UserCache,
+          {UserPoints.UserCache, name: UserPoints.UserCache},
           UserPointsWeb.Endpoint
         ]
       end
