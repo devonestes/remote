@@ -21,7 +21,7 @@ defmodule UserPointsWeb.UserControllerTest do
 
       assert %{status: 200, resp_body: body, state: :sent} = UserController.show(conn, %{})
       assert %{timestamp: timestamp} = Jason.decode!(body, keys: :atoms)
-      assert timestamp >= DateTime.utc_now() |> DateTime.to_unix()
+      assert timestamp <= DateTime.utc_now() |> DateTime.to_unix()
     end
   end
 end
