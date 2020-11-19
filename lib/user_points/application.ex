@@ -13,6 +13,8 @@ defmodule UserPoints.Application do
       UserPointsWeb.Telemetry,
       # Start the PubSub system
       {Phoenix.PubSub, name: UserPoints.PubSub},
+      # Start the user cache
+      UserPoints.UserCache,
       # Start the Endpoint (http/https)
       UserPointsWeb.Endpoint
       # Start a worker by calling: UserPoints.Worker.start_link(arg)
