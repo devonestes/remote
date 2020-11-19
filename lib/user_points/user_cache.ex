@@ -1,30 +1,32 @@
 defmodule UserPoints.UserCache do
   use GenServer
 
-  def start_link(opts \\ [name: __MODULE__]) do
-    GenServer.start_link(__MODULE__, [], opts)
-  end
+  @timeout if Mix.env() == :test, do: 1, else: 60_000
 
-  def get_users() do
-    GenServer.call(__MODULE__, :get_users)
-  end
+  ## API
+
+  def start_link(opts \\ [name: __MODULE__]), do: GenServer.start_link(__MODULE__, [], opts)
+
+  def get_users(pid \\ __MODULE__), do: GenServer.call(pid, :get_users)
+
+  ## CALLBACKS
 
   @impl true
   def init(_) do
     schedule_refresh()
-    {:ok, {gen_max_number(), nil}}
+    {:ok, {gen_max_number(0), nil}}
   end
 
   @impl true
-  def handle_info(:refresh, {_, timestamp}) do
+  def handle_info(:refresh, {max_number, timestamp}) do
     schedule_refresh()
     spawn(fn -> update_db() end)
-    {:noreply, {gen_max_number(), timestamp}}
+    {:noreply, {gen_max_number(max_number), timestamp}}
   end
 
   @impl true
   def handle_call(:get_users, _, {max_number, _}) do
-    users = get_users(max_number)
+    users = do_get_users(max_number)
     {:reply, users, {max_number, current_timestamp()}}
   end
 
@@ -33,14 +35,22 @@ defmodule UserPoints.UserCache do
     nil
   end
 
-  defp get_users(_max_number) do
+  defp do_get_users(_max_number) do
     # TODO
     []
   end
 
-  defp schedule_refresh(), do: Process.send_after(self(), :refresh, 60_000)
+  defp schedule_refresh(), do: Process.send_after(self(), :refresh, @timeout)
 
   defp current_timestamp(), do: DateTime.utc_now() |> DateTime.to_unix()
 
-  defp gen_max_number(), do: 0..100 |> Enum.take_random(1) |> hd()
+  defp gen_max_number(max_number) do
+    # This filtering out of the current `max_number` isn't necessary, but makes it so we don't
+    # have flaky tests.
+    0..100
+    |> Enum.to_list()
+    |> Kernel.--([max_number])
+    |> Enum.take_random(1)
+    |> hd()
+  end
 end
